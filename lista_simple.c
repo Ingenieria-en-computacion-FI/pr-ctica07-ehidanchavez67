@@ -1,123 +1,86 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "lista_simple.h"
 
 Lista* crearLista() {
-    Lista* lista = (Lista*)malloc(sizeof(Lista));
-    if (lista) {
-        lista->head = NULL;
-        lista->tail = NULL;
-    }
-    return lista;
+    Lista* l = (Lista*)malloc(sizeof(Lista));
+    l->head = l->tail = NULL;
+    return l;
 }
 
-int esVacia(Lista* lista) {
-    return (lista == NULL || lista->head == NULL);
-}
+int esVacia(Lista* l) { return (l == NULL || l->head == NULL); }
 
-// Función interna para crear nodos
 static Nodo* crearNodo(void* dato, size_t size) {
-    Nodo* nuevo = (Nodo*)malloc(sizeof(Nodo));
-    if (nuevo) {
-        nuevo->dato = malloc(size); // Espacio para el valor real
-        if (nuevo->dato) {
-            memcpy(nuevo->dato, dato, size); // Clonación bit a bit
-        }
-        nuevo->siguiente = NULL;
-    }
-    return nuevo;
+    Nodo* n = (Nodo*)malloc(sizeof(Nodo));
+    n->dato = malloc(size);
+    memcpy(n->dato, dato, size);
+    n->siguiente = NULL;
+    return n;
 }
 
-void insertarInicio(Lista* lista, void* dato, size_t size) {
-    Nodo* nuevo = crearNodo(dato, size);
-    if (!nuevo) return;
-
-    if (esVacia(lista)) {
-        lista->head = lista->tail = nuevo;
-    } else {
-        nuevo->siguiente = lista->head;
-        lista->head = nuevo;
-    }
+void insertarInicio(Lista* l, void* d, size_t s) {
+    Nodo* n = crearNodo(d, s);
+    if (esVacia(l)) l->head = l->tail = n;
+    else { n->siguiente = l->head; l->head = n; }
 }
 
-void insertarFinal(Lista* lista, void* dato, size_t size) {
-    Nodo* nuevo = crearNodo(dato, size);
-    if (!nuevo) return;
-
-    if (esVacia(lista)) {
-        lista->head = lista->tail = nuevo;
-    } else {
-        lista->tail->siguiente = nuevo;
-        lista->tail = nuevo;
-    }
+void insertarFinal(Lista* l, void* d, size_t s) {
+    Nodo* n = crearNodo(d, s);
+    if (esVacia(l)) l->head = l->tail = n;
+    else { l->tail->siguiente = n; l->tail = n; }
 }
 
-void* buscarPorPosicion(Lista* lista, int pos) {
-    if (esVacia(lista) || pos < 0) return NULL;
-    Nodo* temp = lista->head;
-    for (int i = 0; temp != NULL && i < pos; i++) {
-        temp = temp->siguiente;
-    }
-    return (temp) ? temp->dato : NULL;
-}
-
-void eliminarPorPosicion(Lista* lista, int pos) {
-    if (esVacia(lista) || pos < 0) return;
-    Nodo* temp = lista->head;
-
+void eliminarPorPosicion(Lista* l, int pos) {
+    if (esVacia(l)) return;
+    Nodo *temp = l->head, *ant = NULL;
     if (pos == 0) {
-        lista->head = temp->siguiente;
-        if (lista->head == NULL) lista->tail = NULL;
-        free(temp->dato);
-        free(temp);
-        return;
-    }
-
-    Nodo* ant = NULL;
-    for (int i = 0; temp != NULL && i < pos; i++) {
-        ant = temp;
-        temp = temp->siguiente;
-    }
-
-    if (temp) {
+        l->head = temp->siguiente;
+        if (!l->head) l->tail = NULL;
+    } else {
+        for (int i = 0; temp && i < pos; i++) { ant = temp; temp = temp->siguiente; }
+        if (!temp) return;
         ant->siguiente = temp->siguiente;
-        if (temp == lista->tail) lista->tail = ant;
-        free(temp->dato);
-        free(temp);
+        if (temp == l->tail) l->tail = ant;
+    }
+    free(temp->dato); free(temp);
+}
+
+void eliminarPorElemento(Lista* l, void* d, CompararFunc cmp) {
+    Nodo* aux = l->head;
+    for (int i = 0; aux; i++) {
+        if (cmp(aux->dato, d) == 0) { eliminarPorPosicion(l, i); return; }
+        aux = aux->siguiente;
     }
 }
 
-void modificar(Lista* lista, int pos, void* dato, size_t size) {
-    if (esVacia(lista) || pos < 0) return;
-    Nodo* temp = lista->head;
-    for (int i = 0; temp != NULL && i < pos; i++) {
-        temp = temp->siguiente;
-    }
-    if (temp) {
-        free(temp->dato);
-        temp->dato = malloc(size);
-        memcpy(temp->dato, dato, size);
-    }
+void* buscarPorPosicion(Lista* l, int pos) {
+    Nodo* t = l->head;
+    for (int i = 0; t && i < pos; i++) t = t->siguiente;
+    return (t) ? t->dato : NULL;
 }
 
-void imprimirLista(Lista* lista, ImprimirFunc imprimir) {
-    Nodo* actual = lista->head;
-    while (actual) {
-        imprimir(actual->dato);
-        actual = actual->siguiente;
-    }
+int buscarPorElemento(Lista* l, void* d, CompararFunc cmp) {
+    Nodo* t = l->head;
+    while (t) { if (cmp(t->dato, d) == 0) return 1; t = t->siguiente; }
+    return 0;
+}
+
+void modificar(Lista* l, int pos, void* d, size_t s) {
+    Nodo* t = l->head;
+    for (int i = 0; t && i < pos; i++) t = t->siguiente;
+    if (t) { free(t->dato); t->dato = malloc(s); memcpy(t->dato, d, s); }
+}
+
+void imprimirLista(Lista* l, ImprimirFunc imp) {
+    Nodo* a = l->head;
+    while (a) { imp(a->dato); a = a->siguiente; }
     printf("NULL\n");
 }
 
-void vaciarLista(Lista* lista) {
-    while (!esVacia(lista)) eliminarPorPosicion(lista, 0);
-}
+void vaciarLista(Lista* l) { while (!esVacia(l)) eliminarPorPosicion(l, 0); }
+void borrarLista(Lista* l) { vaciarLista(l); free(l); }
 
-void borrarLista(Lista* lista) {
-    if (!lista) return;
-    vaciarLista(lista);
-    free(lista);
-}
-
-// Navegación básica
-Nodo* primero(Lista* lista) { return lista->head; }
-Nodo* ultimo(Lista* lista) { return lista->tail; }
-Nodo* siguiente(Nodo* actual) { return (actual) ? actual->siguiente : NULL; }
+Nodo* primero(Lista* l) { return l->head; }
+Nodo* ultimo(Lista* l) { return l->tail; }
+Nodo* siguiente(Nodo* n) { return n->siguiente; }
