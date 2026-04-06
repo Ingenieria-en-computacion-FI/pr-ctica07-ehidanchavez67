@@ -2,6 +2,9 @@
 #define __LISTA_SIMPLE_H__
 
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 typedef struct Nodo {
     void* dato;
@@ -13,7 +16,7 @@ typedef struct {
     Nodo* tail;
 } Lista;
 
-// Callbacks
+// Callbacks (Punteros a funciones del usuario)
 typedef int (*CompararFunc)(void*, void*);
 typedef void (*ImprimirFunc)(void*);
 
@@ -21,7 +24,7 @@ typedef void (*ImprimirFunc)(void*);
 Lista* crearLista();
 int esVacia(Lista* lista);
 
-// Inserciones
+// Inserciones (Usan size para copiar el dato)
 void insertarInicio(Lista* lista, void* dato, size_t size);
 void insertarFinal(Lista* lista, void* dato, size_t size);
 
